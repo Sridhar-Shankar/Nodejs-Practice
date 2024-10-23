@@ -1,0 +1,22 @@
+extends layouts/main-layout.pug
+
+block styles 
+    link(rel="stylesheet", href="/css/product.css")
+
+block content 
+    main 
+        if prods.length > 0
+            .grid 
+                each product in prods
+                    article.card.product-item
+                        header.card__header
+                            h1.product__title #{product.title}
+                        .card__image
+                            img(src="https://cdn.kobo.com/book-images/7c814a86-5172-4ebf-8810-abe091527842/353/569/90/False/war-and-peace-322.jpg", alt="A Book")
+                        .card__content
+                            h2.product__price $19.99
+                            p.product__description A very interesting book about so many even more interesting things!
+                        .card__actions
+                            button.btn Add to Cart
+        else  
+            h1 No Products
