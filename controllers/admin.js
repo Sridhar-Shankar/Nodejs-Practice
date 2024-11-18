@@ -9,20 +9,15 @@ exports.getAddProduct = (req, res, next) => {
 };
 
 exports.postAddProduct = (req, res, next) => {
-  const title = req.body.title;
-  const imageUrl = req.body.imageUrl;
-  const price = req.body.price;
-  const description = req.body.description;
+  const { title, imageUrl, price, description } = req.body;
 
-
-  const product = new Product(
-    title,
-    price,
-    description,
-    imageUrl,
-    null,
-    req.user._id
-  );
+  const product = new Product({
+    title: title,
+    price: price,
+    description: description,
+    imageUrl: imageUrl,
+    userId: req.user, //in mongoose u can store entire user object, mongoose will pick the id itself
+  });
 
   product
     .save()
@@ -66,15 +61,15 @@ exports.postEditProduct = (req, res, next) => {
   const updatedPrice = req.body.price;
   const updatedDescription = req.body.description;
 
-  const product = new Product(
-    updatedTitle,
-    updatedPrice,
-    updatedDescription,
-    updatedImageUrl,
-    prodId
-  );
-  product
-    .save()
+  Product.findById(prodId)
+    //here product is full mongoose object so we can use save methos
+    .then((product) => {
+      product.title = updatedTitle;
+      product.price = updatedPrice;
+      product.description = updatedDescription;
+      product.imageUrl = updatedImageUrl;
+      return product.save();
+    })
     .then(() => {
       console.log("UPDATED PRODUCT");
       res.redirect("/admin/products");
@@ -85,8 +80,11 @@ exports.postEditProduct = (req, res, next) => {
 };
 
 exports.getProducts = (req, res, next) => {
-  Product.fetchAll()
+  Product.find()
+    // .select('title price -_id')// retrieve only selected data
+    // .populate('userId') //it populate the related field and fetch the data
     .then((products) => {
+      console.log(products);
       res.render("admin/products", {
         prods: products,
         docTitle: "Admin products",
@@ -101,7 +99,7 @@ exports.getProducts = (req, res, next) => {
 exports.postDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId;
 
-  Product.deleteById(prodId)
+  Product.findByIdAndDelete(prodId)
     .then(() => {
       console.log("DESTROYED PRODUCT");
       res.redirect("/admin/products");

@@ -1,6 +1,9 @@
 const path = require("path");
 const express = require("express");
 const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
+
+require("dotenv").config();
 
 const app = express();
 
@@ -11,7 +14,6 @@ const errorController = require("./controllers/error");
 
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
-const mongoConnect = require("./utils/database").mongoConnect;
 const User = require("./models/user");
 
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -19,9 +21,10 @@ app.use(express.static(path.join(__dirname, "public")));
 
 //middleware
 app.use((req, res, next) => {
-  User.findById("6735f2576eb9d7265980108d") //guaranteed to find the user here and user retrieved is sequelized which contains functions like save,destroy etc..
+  User.findById("6737c09c8c5a1d2ce909ef18") //guaranteed to find the user here and user retrieved is sequelized which contains functions like save,destroy etc..
     .then((user) => {
-      req.user = new User(user.name, user.email, user.cart, user._id);
+      // full mongoose model
+      req.user = user;
       next();
     })
     .catch((err) => {
@@ -34,6 +37,28 @@ app.use(shopRoutes);
 
 app.use(errorController.pageNoteFound);
 
-mongoConnect(() => {
-  app.listen(3000);
-});
+//after connecting db starting server
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("Connected to Db");
+
+    //creating a user
+    User.findOne().then((user) => {
+      if (!user) {
+        const user = new User({
+          name: "Sridhar",
+          email: "abc@test.com",
+          cart: {
+            items: [],
+          },
+        });
+        user.save();
+      }
+    });
+
+    app.listen(process.env.PORT);
+  })
+  .catch((err) => {
+    console.log(err);
+  });
