@@ -9,6 +9,9 @@ const mongoose = require("mongoose");
 const session = require("express-session");
 const MongodDBStore = require("connect-mongodb-session")(session);
 
+const csrf = require("csurf");
+const flash = require("connect-flash");
+
 require("dotenv").config();
 
 const app = express();
@@ -32,6 +35,8 @@ const User = require("./models/user");
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
 
+const csrfProtection = csrf();
+
 // app.use(cookieParser());
 app.use(
   session({
@@ -41,6 +46,9 @@ app.use(
     store: store,
   })
 );
+
+app.use(csrfProtection); //validate csrf tokens here
+app.use(flash());
 
 // middleware
 app.use((req, res, next) => {
@@ -58,6 +66,15 @@ app.use((req, res, next) => {
     });
 });
 
+//middleware fo csrftoken and authentication
+
+app.use((req, res, next) => {
+  //for every request these two fields will be set for the views that are rendered
+  res.locals.isAuthenticated = req.session.isLoggedIn;
+  res.locals.csrfToken = req.csrfToken();
+  next();
+});
+
 app.use("/admin", adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
@@ -69,21 +86,6 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("Connected to Db");
-
-    //creating a user
-    User.findOne().then((user) => {
-      if (!user) {
-        const user = new User({
-          name: "Sridhar",
-          email: "abc@test.com",
-          cart: {
-            items: [],
-          },
-        });
-        user.save();
-      }
-    });
-
     app.listen(process.env.PORT);
   })
   .catch((err) => {
